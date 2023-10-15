@@ -11,7 +11,7 @@
 clear;
 format long;
 %close all;
-load ../data/ChirpLineal.mat Chirp
+load Data/ChirpLineal.mat Chirp
 
 %% Runge-Kutta Parameters
 h=1e-12;  %Step size
@@ -239,10 +239,10 @@ ylabel('Frequency/Hz');
 title(['TF Representation: linear chirp at ',num2str(dB), ' dB' ] )
 axis([0 1.2e-6 0.94e9 1.12e9]);
 grid();
-savefig('/results/LinearChirp.fig')      
+% savefig('../../Plots/ALI/LinearChirp.fig')      
 
 Error=100*(abs(frecMonteCarlo-ChirpIdeal)./ChirpIdeal); 
 mse_media=(mean(Error));
 disp('Percentage of mean absolute error %: ' ); disp(mse_media);
 
-run('QuadraticChirpDetection.m')
+% run('QuadraticChirpDetection.m')
