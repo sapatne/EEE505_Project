@@ -1,0 +1,13 @@
+ALI:
+
+	Linear Chirp:
+		-5 db: 301.2117 secs, 0.09698% MAE
+		-10db: 297.9675 secs, 0.0983% MAE
+		-15db: 301.7696 secs, 0.111% MAE
+		-20db: 301.7026 secs, 0.115% MAE
+
+	Quadratic Chirp:
+		-5 db: 302.2913 secs, 0.257% MAE
+		-10db:
+		-15db:
+		-20db:

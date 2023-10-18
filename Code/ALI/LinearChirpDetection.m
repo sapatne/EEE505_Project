@@ -52,7 +52,7 @@ DW3=1.04;
 DW4=1.08;
 
 %% SNR and chirp amplitude 
-dB=-5;
+dB=-15;
 Ampli=75;
 F1=Ampli*abs(max(Chirp)); %Set amplitude F1=0.3
 sigma=sqrt( (F1^2)/(2*10^(dB/10)) ); %Standard deviation for adding noise
@@ -239,7 +239,7 @@ ylabel('Frequency/Hz');
 title(['TF Representation: linear chirp at ',num2str(dB), ' dB' ] )
 axis([0 1.2e-6 0.94e9 1.12e9]);
 grid();
-% savefig('../../Plots/ALI/LinearChirp.fig')      
+savefig('Plots/ALI/linear_-15db.fig')      
 
 Error=100*(abs(frecMonteCarlo-ChirpIdeal)./ChirpIdeal); 
 mse_media=(mean(Error));

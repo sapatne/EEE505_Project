@@ -1,46 +1,50 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   
-%   Weak linear chirp detection through the adaptive Liènard oscillator
+%   Weak quadratic chirp detection through the adaptive Liènard oscillator
 %    array in chaotic intermittence regime, and time-frequency
 %                              representation
 %
-%                          January, 18th 2023
+%                          January, 10th 2023
 %       Author: Maribel Tello-Bello / Pedro Pancóatl-Bortolotti
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %clc;
 clear;
 format long;
 %close all;
-load Data/ChirpCuadratica.mat Chirp  %Read chirp signal
+load Data/ChirpLineal.mat Chirp
 
 %% Runge-Kutta Parameters
-h=1e-12;    %Step size
-a=0;        %Initial Time
-b=1.2e-6;   %Final Time for Integration
+h=1e-12;  %Step size
+a=0;      %Initial Time
+b=1.2e-6; %Final Time for Integration
 
-xl=0;   %Initial Conditions
+xl=0;
 yl=0;
-%%  Chirp Parameters
 
-Wini=5e9;   %Initial Frequency
+%% Chirp Parameters
+
+Wini=6e9;
 fini=Wini/(2*pi);
-ffin=(15e14/pi)*(b-a) + fini;
-K=(ffin-fini)/(b-a);    %Linear rate frequency
+ffin=(45e13/pi)*(b-a) + fini;
+Wfin=ffin*(2*pi);
+K=(ffin-fini)/(b-a);
+A = 0.01; % Amplitud
 W=Wini;
+tic
 
-%% Window Size   
-tv=b/30;
-TV=a:tv:b; % Array for overlaping
-global ts   %Step size
-ts=h;
-NVent=length(TV);   %Number of windows
+%% Window Size 
+tv= sqrt(0.14/K);
+TV=a:tv:b;  % Array for overlaping
+global ts
+ts=h;        %Step size
+NVent=length(TV);
 
 %% Liènard-type System Parameters
 F=0.7;
 alfa=2;
 beta=1.8654;
 epsilon=2.5263;
+
 %% Delta Omega distribution
 DW1=0.92;
 DW2=0.96;
@@ -48,11 +52,11 @@ DW3=1.04;
 DW4=1.08;
 
 %% SNR and chirp amplitude 
-dB=-5;
-Ampli=7.5;
+dB=-20;
+Ampli=75;
 F1=Ampli*abs(max(Chirp)); %Set amplitude F1=0.3
 sigma=sqrt( (F1^2)/(2*10^(dB/10)) ); %Standard deviation for adding noise
-Umbral=1.85; %Upper threshold
+Umbral=1.9; %Upper threshold
 
 MonteCarlo=20; %Number of Monte Carlo iterations
 tic
@@ -77,7 +81,7 @@ for MC=1:1:MonteCarlo
             %%Oscillator 1    
             W1=DW1*W;
             ODEl=@(t1,x1,y1) (W1)*y1;
-            ODE2=@(t1,x1,y1)  (W1)*((-epsilon*(-1+alfa*tan(x1)^2)*y1)-beta*sinh(x1) + F*cos((W1)*t1) ); 
+            ODE2=@(t1,x1,y1)  (W1)*((-epsilon*(-1+alfa*tan(x1)^2)*y1)-beta*sinh(x1) + F*cos((W1)*t1) );           
             [t1,x1,y1]=RK4B( ODEl,ODE2,xl,yl,h,TV(ini),TV(fin),Signal,W1 );          
             fc1=cos(W1*tc);
             xc01=xcorr(fc1,x1); %cross correlation for improving the intermittent periods
@@ -130,13 +134,19 @@ for MC=1:1:MonteCarlo
             
             %Detect intermittent periods
 
-            [deltaT1]= Delta3R(Umbral,xc1');    
-            [deltaT2]= Delta3R(Umbral,xc2');     
-            [deltaT3]= Delta3R(Umbral,xc3');     
-            [deltaT4]= Delta3R(Umbral,xc4');     
-            [deltaT5]= Delta3R(Umbral,xc5');              
+            [Pic1,delT1]=findpeaks(xc1,'MinPeakDistance', 0.6*(2*pi)/(h*(W-W1)),'MinPeakHeight',Umbral );
+            [Pic2,delT2]=findpeaks(xc2,'MinPeakDistance', 0.6*(2*pi)/(h*(W-W2)),'MinPeakHeight',Umbral );
+            [Pic3,delT3]=findpeaks(xc3,'MinPeakDistance', length(xc3)/1.01 ,'MinPeakHeight',Umbral);
+            [Pic4,delT4]=findpeaks(xc4,'MinPeakDistance', 0.6*(2*pi)/(h*(W4-W)),'MinPeakHeight',Umbral);
+            [Pic5,delT5]=findpeaks(xc5,'MinPeakDistance', 0.6*(2*pi)/(h*(W5-W)),'MinPeakHeight',Umbral );
+
+
+            [ deltaT1 ] = Delta4( delT1 );
+            [ deltaT2 ] = Delta4( delT2 );
+            [ deltaT3 ] = Delta4( delT3 );
+            [ deltaT4 ] = Delta4( delT4 );
+            [ deltaT5 ] = Delta4( delT5 );
            
-            
             mediana1=mean(deltaT1);
             mediana2=mean(deltaT2);
             mediana3=mean(deltaT3);
@@ -183,7 +193,8 @@ for MC=1:1:MonteCarlo
             VecDeltasP(pos)=[(W*DW4)];
             FrecWT1=mean(VecDeltasP);
     elseif length(pos)>1 
-            disp('Hay mas de un cero');            
+            disp('Hay mas de un cero');
+            %FrecWT1=wact.*(1.08);
             VecDeltasP(VecDeltasP==0)=[];
             VecDeltasP=W + 2.*pi./VecDeltasP;
             FrecWT1=mean(VecDeltasP);
@@ -194,11 +205,13 @@ for MC=1:1:MonteCarlo
             VecDeltasP(4)=[(W*DW3) - (2*pi/VecDeltasP(4))];
             VecDeltasP(5)=[(W*DW4)- (2*pi/VecDeltasP(5))];
             FrecWT1=mean(VecDeltasP);
-    end                       
-                   
+    end                        
+     %}     
+            
             freq(MC,Z)=FrecWT1/(2*pi);
-            W=FrecWT1;                       
-            Tfreq(Z)=(TV(fin)+TV(ini))/2;             
+            W=FrecWT1; 
+                       
+            Tfreq(Z)=(TV(fin)+TV(ini))/2;              
                                         
     end
 end
@@ -210,36 +223,26 @@ for c=1:1:(Z)
 end
 
 frecMonteCarlo(1)=fini;
-%frecMonteCarlo(Z)=735900000;
 Tfreq(1)=a;
 
 toc    
 figure();
 hold on;
-for s=1:1:MC   
-    stairs(Tfreq,freq(s,:),'g');
+for B=1:1:MC
+    stairs(Tfreq,freq(B,:),'g');
 end
-
-stairs(Tfreq,frecMonteCarlo,'r',LineWidth=2);
-%Plot real chirp
-ChirpIdeal = 0.1*((5e9/(2*pi)) +  2*(15e14/2*pi)*(Tfreq-0.2*tv) - 3*(98e19/2*pi)*(Tfreq-0.2*tv).^2 ) + 0.9035*(5e9/(2*pi));
-%plot estimated chirp
+stairs(Tfreq,frecMonteCarlo,'r',LineWidth=2)
+ChirpIdeal=(  ((ffin-fini)/b).*Tfreq+fini);
 plot(Tfreq,ChirpIdeal,'-k');
 xlabel('t/s');
 ylabel('Frequency/Hz');
-title(['TF Representation: quadratic chirp at ',num2str(dB), ' dB' ] )
-axis([0 1.1e-6 8e8 9.3e8])
-grid("on");
-savefig('Plots/ALI/quadratic_-5db.fig')       
+title(['TF Representation: linear chirp at ',num2str(dB), ' dB' ] )
+axis([0 1.2e-6 0.94e9 1.12e9]);
+grid();
+savefig('Plots/ALI/linear_-5db.fig')      
 
-Error=100*(abs(frecMonteCarlo(1:22)-ChirpIdeal(1:22))./ChirpIdeal(1:22)); 
+Error=100*(abs(frecMonteCarlo-ChirpIdeal)./ChirpIdeal); 
 mse_media=(mean(Error));
- disp('Percentage of mean absolute error %: ' ); disp(mse_media);
+disp('Percentage of mean absolute error %: ' ); disp(mse_media);
 
-
-% fig1 = openfig('/results/LinearChirp.fig');
-% filename1 = '/results/LinearChirp.png';
-% saveas(fig1, filename1);
-% fig2 = openfig('/results/QuadraticChirp.fig');
-% filename2 = '/results/QuadraticChirp.png';
-% saveas(fig2, filename2);
+% run('QuadraticChirpDetection.m')
