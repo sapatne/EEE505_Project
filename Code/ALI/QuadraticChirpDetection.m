@@ -48,7 +48,7 @@ DW3=1.04;
 DW4=1.08;
 
 %% SNR and chirp amplitude 
-dB=-5;
+dB=-20;
 Ampli=7.5;
 F1=Ampli*abs(max(Chirp)); %Set amplitude F1=0.3
 sigma=sqrt( (F1^2)/(2*10^(dB/10)) ); %Standard deviation for adding noise
@@ -230,7 +230,7 @@ ylabel('Frequency/Hz');
 title(['TF Representation: quadratic chirp at ',num2str(dB), ' dB' ] )
 axis([0 1.1e-6 8e8 9.3e8])
 grid("on");
-savefig('Plots/ALI/quadratic_-5db.fig')       
+savefig('Plots/ALI/quadratic_-20db.fig')       
 
 Error=100*(abs(frecMonteCarlo(1:22)-ChirpIdeal(1:22))./ChirpIdeal(1:22)); 
 mse_media=(mean(Error));
