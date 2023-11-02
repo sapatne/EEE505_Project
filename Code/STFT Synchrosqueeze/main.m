@@ -24,20 +24,26 @@ close all;
 clc;
 
 
-N = 256;
-Fs = N;
+Fs = 1.365333e10;
 Ts = 1/Fs;
-t = [0:N-1]/Fs; % s
+Td = 1.2e-6;
+N = round(Td/Ts) + 1;
+t = linspace(0, Td, N);
 fi = t.*Fs;    % Hz  
 
-c1 = 12;c2 =34;r1 = 50;r2 =64; % the one for adaptive wavelet-based SST
+c1 = (6e9/2*pi);
+c2 = 0;
+r1 = (45e13/pi);
+r2 = 0; % the one for adaptive wavelet-based SST
 
 % r1 = 10;r2 =10; c1 = 18;c2 =8;% the one for adaptive wavelet-based SST
 
 x1 = cos(2*pi*(c1*t+r1/2*t.^2));
-x2 = cos(2*pi*(c2*t+r2/2*t.^2));
+% x2 = cos(2*pi*(c2*t+r2/2*t.^2));
+x2 = 0;
 f1 = c1+r1*t;
-f2 = c2+r2*t;
+% f2 = c2+r2*t;
+f2 = 0;
 s = x1+x2;
 
 gamma = 0.001;
@@ -45,7 +51,7 @@ gamma = 0.001;
 lmd = 1/5.2;    %%duration
 arfa = 1/(2*pi)*sqrt(2*log(1/lmd)); 
 ci_1 = arfa./((f2-f1)/N);        % Eq.(47)
-
+tic
 Ak = 2*pi*arfa*(abs(r1/(N^2)) + abs (r2/(N^2)));  % normalized
 if length(Ak)==1;
     Ak = ones(1,N)*Ak;
@@ -77,7 +83,7 @@ gamma1 = 0.3;
 ci_est = tv_para_fast(s,sgm_1,sgm_u,d_sgm,lmd,gamma1);  
 ci_tv1=smooth(ci_est,20,'rlowess'); 
 
-
+toc
 figure;
 plot(t,ci_1,'b--','linewidth',2);
 hold on;

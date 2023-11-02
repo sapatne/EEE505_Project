@@ -11,3 +11,5 @@ ALI:
 		-10db: 302.8332 secs, 0.321% MAE
 		-15db: 309.0064 secs, 0.679% MAE
 		-20db: 307.6453 secs, 1.648% MAE
+
+FSST: ALI Linear Chirp Signal - 8379.725744 sec // BAD

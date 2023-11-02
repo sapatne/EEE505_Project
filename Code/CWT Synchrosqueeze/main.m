@@ -120,7 +120,7 @@ plot(t,jl1/Fs,'k-','Linewidth',2);
 plot(t,ju2/Fs,'b--','Linewidth',2);
 
 
-ci_1 = arfa/mu * (f1+f2)./((f2-f1));
+ci_1 = arfa/mu * (f1+f2)./(abs(f2-f1));
 
 r1=abs(r1);r2=abs(r2); 
 ar1 = 2*pi*arfa*mu*(r1+r2).^2;
