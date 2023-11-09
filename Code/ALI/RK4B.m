@@ -27,7 +27,22 @@ y(1) = y0;
           Kx4 = ODEl(t(i +  1),x(i)+  Kx3*h,y(i)+  Ky3*h); 
           Ky4 = ODE2(t(i +  1),x(i)+ Kx3*h,y(i) +  Ky3*h) +   (W)*(Signal(i) + Ky3*Signal(i)*h) ;  
           
-          x(i+1) = x(i)  + (Kx1 +  2*Kx2  + 2*Kx3  + Kx4)*h/6; 
-          y(i+1) = y(i)  + (Ky1 +  2*Ky2 +  2*Ky3 +  Ky4)*h/6;       
+          x(i+1) = x(i)  + (Kx1 +  2*Kx2  + 2*Kx3  + Kx4)*h/6;
+          if (abs(x(i + 1)) >= pi/2)
+              if (x(i+1) > 0) 
+                  x(i+1) = 1e-3;
+              elseif x(i+1) < 0 
+                  x(i+1) = -1e-3;
+              end
+          end
+
+          y(i+1) = y(i)  + (Ky1 +  2*Ky2 +  2*Ky3 +  Ky4)*h/6;
+          if (abs(y(i + 1)) >= pi/2)
+              if (y(i+1) > 0) 
+                  y(i+1) = 1e-3;
+              elseif y(i+1) < 0 
+                  y(i+1) = -1e-3;
+              end
+          end
       end 
   end

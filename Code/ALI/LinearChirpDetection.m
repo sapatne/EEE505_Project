@@ -11,21 +11,21 @@
 clear;
 format long;
 %close all;
-load Data/ChirpLineal.mat Chirp
-
+load Data/LinearChirp.mat signal
+signal = interp1([-1, 1], [-0.004, 0.004], signal);
 %% Runge-Kutta Parameters
-h=1e-12;  %Step size
+h=1.5e-4;  %Step size
 a=0;      %Initial Time
-b=1.2e-6; %Final Time for Integration
+b=1; %Final Time for Integration
 
 xl=0;
 yl=0;
 
 %% Chirp Parameters
 
-Wini=6e9;
-fini=Wini/(2*pi);
-ffin=(45e13/pi)*(b-a) + fini;
+fini=1000;
+Wini=fini*(2*pi);
+ffin=7000;
 Wfin=ffin*(2*pi);
 K=(ffin-fini)/(b-a);
 A = 0.01; % Amplitud
@@ -54,16 +54,16 @@ DW4=1.08;
 %% SNR and chirp amplitude 
 dB=-15;
 Ampli=75;
-F1=Ampli*abs(max(Chirp)); %Set amplitude F1=0.3
+F1=Ampli*abs(max(signal)); %Set amplitude F1=0.3
 sigma=sqrt( (F1^2)/(2*10^(dB/10)) ); %Standard deviation for adding noise
 Umbral=1.9; %Upper threshold
 
-MonteCarlo=20; %Number of Monte Carlo iterations
+MonteCarlo=50; %Number of Monte Carlo iterations
 tic
 for MC=1:1:MonteCarlo
     
-    ruido = normrnd(0,sigma,[1,length(Chirp)]); %Noise
-    CHIRP= Ampli*Chirp + ruido; %Chirp with additive noise
+    ruido = normrnd(0,sigma,[1,length(signal)]); %Noise
+    CHIRP= Ampli*signal + ruido; %Chirp with additive noise
     
     freq(1)=fini; %set initial frequency
     Tfreq(1)=a;
@@ -136,7 +136,7 @@ for MC=1:1:MonteCarlo
 
             [Pic1,delT1]=findpeaks(xc1,'MinPeakDistance', 0.6*(2*pi)/(h*(W-W1)),'MinPeakHeight',Umbral );
             [Pic2,delT2]=findpeaks(xc2,'MinPeakDistance', 0.6*(2*pi)/(h*(W-W2)),'MinPeakHeight',Umbral );
-            [Pic3,delT3]=findpeaks(xc3,'MinPeakDistance', length(xc3)/1.01 ,'MinPeakHeight',Umbral);
+            [Pic3,delT3]=findpeaks(xc3,'MinPeakDistance', length(xc3)/1.02 ,'MinPeakHeight',Umbral);
             [Pic4,delT4]=findpeaks(xc4,'MinPeakDistance', 0.6*(2*pi)/(h*(W4-W)),'MinPeakHeight',Umbral);
             [Pic5,delT5]=findpeaks(xc5,'MinPeakDistance', 0.6*(2*pi)/(h*(W5-W)),'MinPeakHeight',Umbral );
 
@@ -232,12 +232,12 @@ for B=1:1:MC
     stairs(Tfreq,freq(B,:),'g');
 end
 stairs(Tfreq,frecMonteCarlo,'r',LineWidth=2)
-ChirpIdeal=(  ((ffin-fini)/b).*Tfreq+fini);
+ChirpIdeal=(((ffin-fini)/b).*Tfreq+fini);
 plot(Tfreq,ChirpIdeal,'-k');
 xlabel('t/s');
 ylabel('Frequency/Hz');
 title(['TF Representation: linear chirp at ',num2str(dB), ' dB' ] )
-axis([0 1.2e-6 0.94e9 1.12e9]);
+axis([0 1 0 1e4]);
 grid();
 savefig('Plots/ALI/linear_-15db.fig')      
 

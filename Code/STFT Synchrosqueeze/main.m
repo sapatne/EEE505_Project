@@ -23,28 +23,19 @@ clear;
 close all;
 clc;
 
+load Data\LinearChirp.mat signal
+Fs = 2048;
+N = length(signal);
+t = linspace(0,1,N);
 
-Fs = 1.365333e10;
-Ts = 1/Fs;
-Td = 1.2e-6;
-N = round(Td/Ts) + 1;
-t = linspace(0, Td, N);
-fi = t.*Fs;    % Hz  
-
-c1 = (6e9/2*pi);
+c1 = 1000;
 c2 = 0;
-r1 = (45e13/pi);
+r1 = (125-1000);
 r2 = 0; % the one for adaptive wavelet-based SST
 
-% r1 = 10;r2 =10; c1 = 18;c2 =8;% the one for adaptive wavelet-based SST
-
-x1 = cos(2*pi*(c1*t+r1/2*t.^2));
-% x2 = cos(2*pi*(c2*t+r2/2*t.^2));
-x2 = 0;
 f1 = c1+r1*t;
-% f2 = c2+r2*t;
 f2 = 0;
-s = x1+x2;
+s = signal;
 
 gamma = 0.001;
 
@@ -83,7 +74,7 @@ gamma1 = 0.3;
 ci_est = tv_para_fast(s,sgm_1,sgm_u,d_sgm,lmd,gamma1);  
 ci_tv1=smooth(ci_est,20,'rlowess'); 
 
-toc
+
 figure;
 plot(t,ci_1,'b--','linewidth',2);
 hold on;
@@ -188,4 +179,4 @@ ylabel('Frequency (Hz)','FontSize',20);
 set(gca,'FontSize',20);
 title('Conventional 2nd-order SST when \sigma=0.02');
 
-
+toc
