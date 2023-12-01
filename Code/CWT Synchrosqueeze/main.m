@@ -15,8 +15,6 @@
 clear;
 close all;
 clc;
-
-
 %%%%%%% 2018.1.14
 N = 256;
 
@@ -25,21 +23,32 @@ Ts = 1/Fs;
 t = [0:N-1]/Fs; % s
 fi = t.*Fs;    % Hz  
 
-r1 = 50;r2 =64; c1 = 12;c2 =34;
+% r1 = 50;r2 =64; c1 = 12;c2 =34;
+% 
+% x1 = cos(2*pi*(c1*t+r1/2*t.^2));
+% x2 = cos(2*pi*(c2*t+r2/2*t.^2));
+% f1 = c1+r1*t;
+% f2 = c2+r2*t;
+% s = x1+x2;
 
-x1 = cos(2*pi*(c1*t+r1/2*t.^2));
-x2 = cos(2*pi*(c2*t+r2/2*t.^2));
-f1 = c1+r1*t;
-f2 = c2+r2*t;
-s = x1+x2;
+[s, f, r, c] = signal_gen('n');
+r1 = r(1);
+r2 = r(2);
+c1 = c(1);
+c2 = c(2);
+f1 = f(1, :);
+f2 = f(2, :);
+
 
 figure;
 plot(t,s,'k-','linewidth',1);
+title("Signal in Time domain")
 
 figure;
 plot(t,f1,'r-','linewidth',2);
 hold on;
 plot(t,f2,'b-','linewidth',2);
+title("Instantenous frequencies")
 
 % figure;
 % plot(fi,abs(fft(hilbert(s))),'k-','linewidth',1);
@@ -50,7 +59,7 @@ plot(t,f2,'b-','linewidth',2);
 gamma = 0.01;
 mu = 1;
 %ci = 2;
-ci=1; 
+ci = 0.5; 
 nv = 32;
 ol = length(s);    % original length
 s = s(:);          % Turn into column vector
@@ -78,21 +87,21 @@ N = length(x);
 
 x = x(:).';
 xh = fft(x);
-%%% computes CWT with "Morlet"
+%% computes CWT with "Morlet"
 psihfn = @(w) exp(-2*pi^2*ci^2*(w-mu).^2);
 k = 0:(N-1);
 xi = zeros(1,N);
 xi(1:N/2+1) = [0:N/2]/N*Fs;
 xi(N/2+2:end) = [-N/2+1:-1]/N*Fs;
 
-%%%% Compute CWT
+%% Compute CWT
 Ws = zeros(na,N);
 dWs = Ws;
 for ai = 1:na
     a = aj(ai);
     psih = psihfn(a*xi);
     dpsih = (i*xi) .* psih;
-    
+
     xcpsi = (ifft(psih .* xh));
     Ws(ai, :) = xcpsi;
     dxcpsi = (ifft(dpsih .* xh));
@@ -108,6 +117,9 @@ arfa = 1/(2*pi)*sqrt(2*log(1/lmd));
 
 figure;
 imagesc(t,aj,abs(Ws));
+title("CWT with Morlet")
+
+%% Calculate sigma_1 and sigma_2
 
 % the lower edge for x1
 l1 = (-f1+sqrt(f1.^2-8*pi*arfa*(arfa-mu*ci)*abs(r1)))/(4*pi*ci*arfa*abs(r1));
@@ -119,9 +131,10 @@ hold on;
 plot(t,jl1/Fs,'k-','Linewidth',2);
 plot(t,ju2/Fs,'b--','Linewidth',2);
 
-
+% Sigma_1
 ci_1 = arfa/mu * (f1+f2)./(abs(f2-f1));
 
+% Sigma_2
 r1=abs(r1);r2=abs(r2); 
 ar1 = 2*pi*arfa*mu*(r1+r2).^2;
 bt1 = (r1*f2+r2*f1).*(f2-f1)+4*pi*arfa^2*(r2^2-r1^2);
@@ -130,29 +143,37 @@ dt1=(r1*f2+r2*f1).^2.*((f2-f1).^2-16*pi*arfa^2*(r1+r2));
 ci_2 = max(arfa/mu,real((bt1-sqrt(dt1))/(2*ar1)));
 
 ci_2up = (bt1+sqrt(dt1))/(2*ar1);
+%%
 
 figure;
 plot(t,ci_1,'k-','linewidth',2);
 hold on;
 plot(t,ci_2,'r-','linewidth',2);
 
-%%%% Compute SST
-[Ws Rs STs aj] = cwt_sst_mc(s,gamma,mu*2*pi,ci,nv);
+%% Compute SST with sigma = 1
+[Ws, Rs, STs, STs2, aj] = cwt_sst_mc(s,gamma,mu*2*pi,ci,nv);
 figure;
+subplot(431);
 imagesc(t,aj*Ts,abs(Ws));
+title("CWT 2")
 
-figure;
+subplot(432);
 imagesc(t,[0:n/2-1],abs(STs));
+title("SST of CWT")
+subplot(433);
+imagesc(t,[0:n/2-1],abs(STs2));
+title("SST 2 of CWT")
 
-%%%% Compute Time-varying parameter SST
+%% Compute Time-varying parameter SST with sigma_1
 for kk = 1:n
     ci = ci_1(kk);
     [Ws Rs STs aj] = cwt_sst_mc_ti(s,gamma,mu*2*pi,ci,nv,kk-1);
     Ws_1(:,kk) = Ws;
     STs_1(:,kk) = STs;
 end
-figure;
+subplot(434);
 imagesc(t,aj*Ts,abs(Ws_1));
+title("CWT 3")
 
 l1_p1 = (mu-arfa./ci_1)./f1;           % signals are approximated by harmanics
 u2_p1 = (mu+arfa./ci_1)./f2;
@@ -163,26 +184,20 @@ hold on;
 plot(t,jl1_p1/Fs,'k-','Linewidth',2);
 plot(t,ju2_p1/Fs,'b--','Linewidth',2);
 
-
-
-figure;
+subplot(435);
 imagesc(abs(STs_1));
+title("Time Varying SST of CWT")
 
-
+% Time-varying SST with sigma_2
 for kk = 1:n
     ci = ci_2(kk);
     [Ws Rs STs aj] = cwt_sst_mc_ti(s,gamma,mu*2*pi,ci,nv,kk-1);
     Ws_2(:,kk) = Ws;
     STs_2(:,kk) = STs;
 end
-figure;
-imagesc(t,aj*Ts,abs(Ws_2));
-colormap('cool');
-axis xy;
-xlabel('Time (s)','FontSize',20);
-ylabel('Scale','FontSize',20);
-set(gca,'FontSize',20)
-set(gca, 'YTick',[0.004 0.25 0.5 0.75 1], 'YTickLabel', {'0.004','0.0156','0.0625','0.25','1'});
+% subplot(436);
+% imagesc(t,aj*Ts,abs(Ws_2));
+% title("CWT 4")
 
 l1_p = (-f1+sqrt(f1.^2-8*pi*arfa*(arfa-mu*ci_2)*abs(r1)))./(4*pi*ci_2*arfa*abs(r1));
 % the upper edge for x2
@@ -197,14 +212,45 @@ legend('\it{l}\rm{_1}','\it{u}\rm{_2}');
 set(legend,'FontName','Times New Roman')
 
 
-figure;
+subplot(436);
 imagesc(abs(STs_2));
+title("Time Vary SST of CWT 2")
 
 
-%% compute the ASST, adaptive SST, adaptive 2nd-order SST.
+%% compute the CWT, conventional SST, conventional 2nd-order SST.
+ci_tv = ones(1, N);
+[Ws, Ts1_vt, Ts2_vt, w2nd, aj] = cwt_2nd_order_sst_tv(s,gamma,mu,ci_tv,nv);
+
+subplot(437);
+imagesc(t, aj*Ts, abs(Ws))
+title("CWT for \sigma=1")
+axis xy;
+
+subplot(438);
+imagesc(t, [0:n/2-1], abs(Ts1_vt));
+title("1st order SST for \sigma=1")
+axis xy;
+
+subplot(439);
+imagesc(t, [0:n/2-1], abs(Ts2_vt));
+title("2nd order SST for \sigma=1")
+axis xy;
+
+%% compute the adaptive CWT, adaptive SST, adaptive 2nd-order SST.
 ci_tv = ci_2;
-[Ws Ts1_vt Ts2_vt w2nd aj] = cwt_2nd_order_sst_tv(s,gamma,mu,ci_tv,nv);
-figure;
-imagesc(abs(Ts1_vt));
-figure;
-imagesc(abs(Ts2_vt));
+[Ws, Ts1_vt, Ts2_vt, w2nd, aj] = cwt_2nd_order_sst_tv(s,gamma,mu,ci_tv,nv);
+
+% subplot(4310);
+imagesc(t, aj*Ts, abs(Ws))
+title("Adaptive CWT with \sigma_2")
+axis xy;
+
+% subplot(4311);
+imagesc(t, [0:n/2-1], abs(Ts1_vt));
+title("Adaptive 1st order SST for \sigma_2")
+axis xy;
+
+% subplot(4312);
+imagesc(t, [0:n/2-1], abs(Ts2_vt));
+title("Adaptive 2nd order SST for \sigma_2")
+axis xy;

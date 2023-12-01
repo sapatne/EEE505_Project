@@ -1,80 +1,82 @@
-function signal = signal_gen(type, snr)
+function [s, f, r, c] = signal_gen(type, noise, N)
 %   Generate signals for use in EEE505 project
 %   Can generate 3 different signals: linear chirp, quadratic chirp,
 %   multicomponent (linear + quadratic) chirp signal
 %   
 %   INPUTS
-%   type = signal type, (DEFAULT = 'm') 
-%          ('l'/'q'/'m' = linear/quadratic/multicomponent)
-%   snr = desired SNR of the generated signal (scalar), (DEFAULT = 10)
+%   N = sample length/sampling frequency
+%   t = signal time vector
+%   type = signal type, (DEFAULT = 'n') 
+%          ('n'/'o' = non-overlapping/overlapping multicomponent signal)
+%   noise = set if generated signal to have AWGN, (DEFAULT = false)
 %   
 %   OUTPUT
-%   signal = generated signal of specified type and SNR
+%   signal = generated signal of specified type and noise
 %
     
     % Set default arguments
     arguments
-        type = 'm'
-        snr = 10 % Output SNR --> High SNR = less Noise
+        type = 'n'
+        noise = false 
+        N = 256
     end
-
-
-
-    fs = 16384; % In powers of 2
-    Td = 1;
-    N = Td * fs + 1;
-    t = linspace(0, Td, N);
-
-    switch type
-        case 'l'
-            f0 = 7000; % Start
-            f1 = 1000; % End
-            signal = chirp(t, f0, Td, f1);
-            signal = awgn(signal, snr, 'measured');
-            name = "LinearChirp";
-            titleplt = "Linear Chirp Generated Signal";
-        case 'q'
-            fo = 6500; % Start
-            f1 = 2500; % End
-            signal = chirp(t, fo, Td, f1, 'quadratic', [], 'convex');
-            signal = awgn(signal, snr, 'measured');
-            name = "QuadraticChirp";
-            titleplt = "Quadratic Chirp Generated Signal";
-        case 'm'
-            % Generate real linear chirp
-            f01 = 3500; % Start
-            f11 = 6750; % End
-            x1 = chirp(t, f01, Td, f11); 
     
+    t = linspace(0, 1-1/N, N);
+    switch type
+        case 'n'
+            % Generate real linear chirp
+            c1 = 50; % Start
+            c2 = 102; % End
+            x1 = chirp(t, c1, 1, c2); 
+            r1 = (c2 - c1);
+            f1 = c1 + r1*t;
+
             % Generate real quadratic chirp
-            f02 = 3000; % Start
-            f12 = 250; % End
-            x2 = chirp(t, f02, Td, f12, 'quadratic', [], 'convex');
+            d1 = 34; % Start
+            d2 = 12; % End
+            % x2 = chirp(t, d1, 1, d2, 'quadratic');
+            % r2 = d2 - d1
+            % f2 = d1 + r2*t.^2;
+            x2 = chirp(t, d1, 1, d2); 
+            r2 = (d2 - d1);
+            f2 = d1 + r2*t;
 
             % Combine both and add noise
-            signal = x1 + x2;
-            signal = awgn(signal, snr, 'measured');
-            name = "MultiChirp";
+            s = x1 + x2;
+            if (noise)
+                s = awgn(s, snr, 'measured');
+            end
+            r = [r1; r2];
+            c = [c1; d1];
+            f = [f1; f2];
+        case 'o'
+            % Generate real linear chirp
+            c1 = 12; % Start
+            c2 = 62; % End
+            x1 = chirp(t, c1, 1, c2); 
+            r1 = (c2 - c1);
+            f1 = c1 + r1*t;
+    
+            % Generate real linear chirp
+            d1 = 98; % Start
+            d2 = 34; % End
+            x2 = chirp(t, d1, 1, d2);
+            r2 = (d2 - d1);
+            f2 = c1 + r2*t;
 
-            titleplt = "Multi-Component Generated Signal";
+            % Combine both and add noise
+            s = x1 + x2;
+            if (noise)
+                s = awgn(s, snr, 'measured');
+            end
+
+            r = [r1; r2];
+            c = [c1; d1];
+            f = [f1; f2];
+
         otherwise
             msg = sprintf("ERROR: Not a valid signal type.\nCheck help for valid arguments.");
             error(msg);
     end
-    
-    % Get one-sided Spectrogram for real signal
-    [s1, f1, t1] = stft(signal, fs, "Window", hanning(301), "FFTLength", 1024, "FrequencyRange", "onesided");
-    
-    figure;
-    imagesc(t1, f1, abs(s1));
-    axis xy;
-    title(titleplt, FontSize=15);
-    xlabel('Time (s)');
-    ylabel('Frequency (Hz)');
-    plotname = "Plots/Signals/" + name;
-    savefig(plotname);
-    saveas(gcf, plotname, 'png');
 
-    filename = "Data/" + name + ".mat";
-    save(filename, "signal");
 end

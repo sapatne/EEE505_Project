@@ -24,27 +24,53 @@ close all;
 clc;
 
 load Data\LinearChirp.mat signal
-Fs = 2048;
-N = length(signal);
-t = linspace(0,1,N);
+N = 256;
 
-c1 = 1000;
-c2 = 0;
-r1 = (125-1000);
-r2 = 0; % the one for adaptive wavelet-based SST
+Fs = 256;
+Ts = 1/Fs;
+t = [0:N-1]/Fs; % s
+fi = t.*Fs;    % Hz  
 
-f1 = c1+r1*t;
-f2 = 0;
-s = signal;
+% c1 = 12;
+% c2 =64;
+% 
+% r1 = 50;
+% r2 =-34; 
+% 
+% x1 = cos(2*pi*(c1*t+r1/2*t.^2));
+% x2 = cos(2*pi*(c2*t+r2/2*t.^2));
+% f1 = c1+r1*t;
+% f2 = c2+r2*t;
+% s = x1+x2;
 
+[s, f, r, c] = signal_gen('n');
+r1 = r(1);
+r2 = r(2);
+c1 = c(1);
+c2 = c(2);
+f1 = f(1, :);
+f2 = f(2, :);
+
+
+figure;
+plot(t,s,'k-','linewidth',1);
+title("Signal in Time domain")
+
+figure;
+plot(t,f1,'r-','linewidth',2);
+hold on;
+plot(t,f2,'b-','linewidth',2);
+title("Instantenous frequencies")
+
+%%
 gamma = 0.001;
 
-lmd = 1/5.2;    %%duration
+lmd = 1/5;    %%duration
 arfa = 1/(2*pi)*sqrt(2*log(1/lmd)); 
 ci_1 = arfa./((f2-f1)/N);        % Eq.(47)
 tic
 Ak = 2*pi*arfa*(abs(r1/(N^2)) + abs (r2/(N^2)));  % normalized
-if length(Ak)==1;
+if length(Ak)==1
     Ak = ones(1,N)*Ak;
 end
 Bk = (f2-f1)/N;
@@ -60,7 +86,7 @@ end
 ci_1 = ci_1/N;
 ci_2 = ci_2/N;
 
-%%%% the Renyi Entropy method
+%% the Renyi Entropy method
 sgm_1 = 0.005;
 d_sgm = 0.001;
 sgm = sgm_1:d_sgm:0.1;
@@ -90,61 +116,63 @@ xlabel('Time (s)','FontSize',20);
 ylabel('\sigma','FontSize',20);
 title('Various time-varying parameters of \sigma(t)');
 
+%%
 sigma_tv = ci_2;
 [Vs_tv Ts1_tv Ts2_tv] = adap_stft_sst(s,gamma,sigma_tv*Fs);
 figure;
-imageSQ(t,[0:N/2-1],abs(Vs_tv));
+imageSQ(t,fi,abs(Vs_tv));
 axis xy;
 xlabel('Time (s)','FontSize',20);
 ylabel('Frequency (Hz)','FontSize',20);
 set(gca,'FontSize',20);
 title('Adaptive STFT with \sigma_2(t)');
+
 figure;
-imageSQ(t,[0:N/2-1],abs(Ts1_tv));
+imageSQ(t,fi,abs(Ts1_tv));
 axis xy;
 xlabel('Time (s)','FontSize',20);
 ylabel('Frequency (Hz)','FontSize',20);
 set(gca,'FontSize',20);
 title('Adaptive FSST with \sigma_2(t)');
+
 figure;
-imageSQ(t,[0:N/2-1],abs(Ts2_tv));
+imageSQ(t,fi,abs(Ts2_tv));
 axis xy;
 xlabel('Time (s)','FontSize',20);
 ylabel('Frequency (Hz)','FontSize',20);
 set(gca,'FontSize',20);
 title('Adaptive 2nd-order FSST with \sigma_2(t)');
 
+%% estimated sigma for fsst
 sigma_tv = ci_tv1;
 [Vs_tv Ts1_tv Ts2_tv] = adap_stft_sst(s,gamma,sigma_tv*Fs);
 figure;
-imageSQ(t,[0:N/2-1],abs(Vs_tv));
+imagesc(t,fi,abs(Vs_tv));
 % axis([0 1 0 40]);
 axis xy;
-xlabel('Time (s)','FontSize',20);
-ylabel('Frequency (Hz)','FontSize',20);
-set(gca,'FontSize',20);
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
 title('Adaptive STFT with the estimated \sigma(t)');
+
 figure;
-imageSQ(t,[0:N/2-1],abs(Ts1_tv));
+imagesc(t,fi,abs(Ts1_tv));
 axis xy;
-xlabel('Time (s)','FontSize',20);
-ylabel('Frequency (Hz)','FontSize',20);
-set(gca,'FontSize',20);
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
 title('Adaptive FSST with the estimated \sigma(t)');
+
 figure;
-imageSQ(t,[0:N/2-1],abs(Ts2_tv));
+imagesc(t,fi,abs(Ts2_tv));
 axis xy;
-xlabel('Time (s)','FontSize',20);
-ylabel('Frequency (Hz)','FontSize',20);
-set(gca,'FontSize',20);
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
 title('Adaptive 2nd-order FSST with the estimated \sigma(t)');
 
-
-
+%%
 % regular-PT adaptive SST with Re1
 FSST_rpt = regular_pt_adap_sst(s,gamma,ci_tv2); 
 figure;
-imageSQ(t,[0:N/2-1],abs(FSST_rpt));
+imageSQ(t,fi,abs(FSST_rpt));
 axis xy;
 xlabel('Time (s)','FontSize',20);
 ylabel('Frequency (Hz)','FontSize',20);
@@ -155,28 +183,36 @@ title('Regular-PT adaptive SST with \sigma_{Re1}(t)');
 % regular-PT adaptive 2nd-order SST with Re2
 FSST2_rpt = regular_pt_adap_sst2(s,gamma,ci_tv3);
 figure;
-imageSQ(t,[0:N/2-1],abs(FSST2_rpt));
+imageSQ(t,fi,abs(FSST2_rpt));
 axis xy;
 xlabel('Time (s)','FontSize',20);
 ylabel('Frequency (Hz)','FontSize',20);
 set(gca,'FontSize',20);
 title('2nd-order regular-PT adaptive SST with \sigma_{Re2}(t)');
 
+%% conventional stft and fsst
+[STFT, SST, VSST] = stft_sst2(s,gamma,0.02);
 
-[STFT SST VSST] = stft_sst2(s,gamma,0.02);
 figure;
-imageSQ(t,[0:N/2-1],abs(SST));
+imagesc(t, fi, abs(STFT))
 axis xy;
-xlabel('Time (s)','FontSize',20);
-ylabel('Frequency (Hz)','FontSize',20);
-set(gca,'FontSize',20);
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
+title('Conventional STFT when \sigma=0.02');
+
+
+figure;
+imagesc(t,fi,abs(SST));
+axis xy;
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
 title('Conventional SST when \sigma=0.02');
+
 figure;
-imageSQ(t,[0:N/2-1],abs(VSST));
+imagesc(t,fi,abs(VSST));
 axis xy;
-xlabel('Time (s)','FontSize',20);
-ylabel('Frequency (Hz)','FontSize',20);
-set(gca,'FontSize',20);
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
 title('Conventional 2nd-order SST when \sigma=0.02');
 
 toc

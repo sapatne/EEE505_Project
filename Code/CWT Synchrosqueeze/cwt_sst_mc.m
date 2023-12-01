@@ -1,4 +1,4 @@
-function [Ws Rs Ts aj] = cwt_sst_mc(s,gamma,mu,ci,nv)
+function [Ws, Rs, Ts, Ts2, aj] = cwt_sst_mc(s,gamma,mu,ci,nv)
 % computes the CWT Ws, the phase transform of CWT Rs, and the
 % synchrosqueezing transform SST Ts of the signal s.
 % Input:
@@ -77,7 +77,8 @@ hWs = (abs(Ws)>gamma).*(1./Ws);
 Rs = 1/(2*pi)*dWs.*hWs;    % phase transform
 
 wl = [0:2:n-1]/n/2;          % linear frequency bin
-Ts = zeros(n/2,n);  
+Ts = zeros(n/2,n);
+Ts2 = zeros(n/2, n);
 
 dw = wl(2)-wl(1);    % frequency step
 for bi = 1:n
@@ -86,7 +87,7 @@ for bi = 1:n
         tmp1 = find(imag(Rs(:,bi))>w-dw/2 & imag(Rs(:,bi))<=w+dw/2 );
         if length(tmp1)>=1
             Ts(wi,bi) = Ts(wi,bi) + log(2)/nv*ones(1,length(tmp1))*Ws(tmp1,bi);  
-%             Ts(wi,bi) = Ts(wi,bi) + log(2)/nv * aj(tmp1).^(-1/2)*Ws(tmp1,bi);    
+            Ts2(wi,bi) = Ts2(wi,bi) + log(2)/nv * aj(tmp1).^(-1/2)*Ws(tmp1,bi);    
         end
     end
 end
@@ -94,6 +95,7 @@ end
 Ws = Ws(:,1:ol);
 Rs = Rs(:,1:ol);
 Ts = Ts(:,1:ol);
+Ts2 = Ts2(:,1:ol);
 
 end
 
